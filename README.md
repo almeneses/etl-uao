@@ -2,6 +2,8 @@
 
 ## Descripción General
 
+🌐 [Dashboard](https://etl-uao-am.streamlit.app/)
+
 Este proyecto implementa un **sistema ETL (Extract, Transform, Load)** y un **dashboard interactivo en Streamlit** para el análisis de datos de **calidad del aire** (concentraciones horarias de contaminantes como PM10, PM2.5, O₃, NO₂, CO, etc.) provenientes de estaciones ambientales de Cali (Ermita, Flora, Pance, Univalle).
 
 El sistema está diseñado para automatizar la extracción, transformación y carga de los datos en una base de datos relacional optimizada para análisis, y ofrecer visualizaciones interactivas que permiten explorar la evolución temporal y correlación de los contaminantes.
@@ -12,28 +14,30 @@ El sistema está diseñado para automatizar la extracción, transformación y ca
 
 ```
 .
-├── run_etl.py                     # Entrada principal del ETL (API)
-├── init_db.py                     # Inicializa/esquema de la base de datos
-├── requirements.txt               # Dependencias del proyecto
-├── LICENSE                        # Licencia del proyecto
+├── run_etl.py                            # Entrada principal del ETL (API)
+├── init_db.py                            # Inicializa/esquema de la base de datos
+├── requirements.txt                      # Dependencias del proyecto
+├── LICENSE                               # Licencia del proyecto
 ├── data/
-│   └── etl_database.db            # Base de datos SQLite
+│   └── etl_database.db                   # Base de datos SQLite
+|   └── logs/
+|       └── etl_<anio>_<mes>_<dia>.log    # Logs de ejecución del ETL
 ├── diagramas/
-│   └── diagrama_db.dbml           # Modelo entidad‑relación (DBML)
+│   └── diagrama_db.dbml                  # Modelo entidad‑relación (DBML)
 ├── etl/
 │   ├── __init__.py
-│   ├── config.py                  # Paths y parámetros del ETL
-│   ├── extract.py                 # Extracción (API CKAN)
-│   ├── transform.py               # Limpieza y normalización
-│   ├── load.py                    # Carga a tablas principales
-│   ├── load_ica.py                # Carga del índice ICA
-│   ├── ica_calculator.py          # Cálculo del ICA
-│   ├── etl_utils.py               # Utilidades generales (logs, helpers)
-│   ├── etl_logger.py              # Registro de ejecuciones del ETL
-│   └── models.py                  # Modelos/DDL auxiliares
+│   ├── config.py                         # Paths y parámetros del ETL
+│   ├── extract.py                        # Extracción (API CKAN)
+│   ├── transform.py                      # Limpieza y normalización
+│   ├── load.py                           # Carga a tablas principales
+│   ├── load_ica.py                       # Carga del índice ICA
+│   ├── ica_calculator.py                 # Cálculo del ICA
+│   ├── etl_utils.py                      # Utilidades generales (logs, helpers)
+│   ├── etl_logger.py                     # Registro de ejecuciones del ETL
+│   └── models.py                         # Modelos/DDL auxiliares
 └── dashboard/
-    ├── app.py                     # Aplicación Streamlit principal
-    ├── config.py                  # Configuración del dashboard
+    ├── app.py                            # Aplicación Streamlit principal
+    ├── config.py                         # Configuración del dashboard
     └── utils/
         ├── db_utils.py
         ├── normativa_utils.py
@@ -184,7 +188,7 @@ Cada ejecución genera un registro en la tabla `etl_log`, con los siguientes cam
 **Alejandro Meneses**  
 Proyecto ETL – Maestría / UAO - Cali
 📧 alejandro.meneses@uao.edu.co  
-🌐 [Dashboard](<link>)
+🌐 [Dashboard](https://etl-uao-am.streamlit.app/)
 
 ---
 

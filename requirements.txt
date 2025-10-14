@@ -3,3 +3,4 @@ sqlalchemy
 streamlit
 seaborn
 plotly
+prefect
