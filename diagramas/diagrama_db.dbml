@@ -1,0 +1,116 @@
+//////////////////////////////////////////////////////
+// Proyecto ETL Calidad del Aire - Modelo ER (DBML)
+//////////////////////////////////////////////////////
+
+Project ETL_Calidad_Aire {
+  database_type: "PostgreSQL"
+  note: "Modelo entidad-relación para integrar datos de SISAIRE, AQICN, etc."
+}
+
+//////////////////////////////////////////////////////
+// Tabla: Fuente
+//////////////////////////////////////////////////////
+Table fuente {
+  id_fuente SERIAL [pk]
+  nombre VARCHAR(50) [not null]
+  tipo VARCHAR(20)
+  url_api TEXT
+  fecha_actualizacion TIMESTAMP
+  Note: "Origen de los datos (API, CSV, etc.)"
+}
+
+//////////////////////////////////////////////////////
+// Tabla: Estación
+//////////////////////////////////////////////////////
+Table estacion {
+  id_estacion SERIAL [pk]
+  codigo VARCHAR(50) [not null, unique]
+  nombre VARCHAR(100)
+  municipio VARCHAR(100)
+  departamento VARCHAR(100)
+  latitud NUMERIC(9,6)
+  longitud NUMERIC(9,6)
+  altitud NUMERIC(6,2)
+  fuente_id INT [ref: > fuente.id_fuente]
+  activo BOOLEAN [default: true]
+  Note: "Representa cada punto o estación de monitoreo"
+}
+
+//////////////////////////////////////////////////////
+// Tabla: Contaminante
+//////////////////////////////////////////////////////
+Table contaminante {
+  id_contaminante SERIAL [pk]
+  codigo VARCHAR(20) [not null, unique]
+  nombre VARCHAR(100)
+  unidad VARCHAR(20)
+  descripcion TEXT
+  Note: "Tipo de sustancia monitoreada (PM2.5, O3, etc.)"
+}
+
+//////////////////////////////////////////////////////
+// Tabla: Tiempo
+//////////////////////////////////////////////////////
+Table tiempo {
+  id_tiempo integer [pk, increment, note: 'Identificador único del tiempo']
+  anio integer [not null, note: 'Año de la medición (e.g., 2025)']
+  mes integer [not null, note: 'Mes de la medición (1–12)']
+  dia integer [not null, note: 'Día del mes (1–31)']
+  hora integer [not null, note: 'Hora del día (0–23)']
+
+  fecha date [note: 'Fecha completa sin hora (YYYY-MM-DD)']
+  fecha_hora datetime [note: 'Marca temporal completa (YYYY-MM-DD HH:00:00)']
+  dia_semana text [note: 'Nombre del día de la semana (Lunes, Martes, etc.)']
+  nombre_mes text [note: 'Nombre del mes (Enero, Febrero, etc.)']
+  trimestre integer [note: 'Trimestre del año (1–4)']
+
+  Note: 'Tabla de dimensión temporal. Incluye jerarquía año–mes–día–hora y campos derivados para análisis y agregación.'
+  
+  indexes {
+    (anio, mes, dia, hora) [unique, name: 'uix_tiempo']
+  }
+}
+
+
+
+//////////////////////////////////////////////////////
+// Tabla: Medición
+//////////////////////////////////////////////////////
+Table medicion {
+  id_medicion BIGSERIAL [pk]
+  id_estacion INT [ref: > estacion.id_estacion]
+  id_contaminante INT [ref: > contaminante.id_contaminante]
+  id_tiempo INT [ref: > tiempo.id_tiempo]
+  fecha_hora TIMESTAMP [not null]
+  valor NUMERIC(10,3)
+  calidad_dato VARCHAR(30)
+  fuente VARCHAR(30)
+  Note: "Registro puntual de un valor de contaminante medido en una estación y fecha/hora"
+}
+
+//////////////////////////////////////////////////////
+// Tabla: Índice ICA (Índice de Calidad del Aire)
+//////////////////////////////////////////////////////
+Table indice_ica {
+  id_ica SERIAL [pk]
+  id_estacion INT [ref: > estacion.id_estacion]
+  fecha_hora TIMESTAMP [not null]
+  ica NUMERIC(10,2)
+  categoria VARCHAR(30)
+  contaminante_dominante INT [ref: > contaminante.id_contaminante]
+  fuente_calculo VARCHAR(30)
+  Note: "Valor del índice ICA o AQI calculado para una estación y momento específico"
+}
+
+
+Table etl_log {
+  id bigint [pk, increment]
+  process_name varchar(100) [not null]
+  status varchar(20) [not null] // success, failed, running
+  start_time timestamp [not null, default: `now()`]
+  end_time timestamp
+  rows_inserted int
+  rows_updated int
+  rows_deleted int
+  error_message text
+}
