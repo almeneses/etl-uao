@@ -6,8 +6,10 @@ from utils.db_utils import (obtener_contaminantes_por_estacion,
                             obtener_estaciones, obtener_indice_ica,
                             obtener_mediciones)
 from utils.ica_utils import obtener_color_por_categoria
+from utils.kpi_utils import calcular_kpis_estacion
 from utils.normativa_utils import obtener_limites
-from utils.plot_utils import (agregar_frecuencia,
+from utils.plot_utils import (COLOR_POR_CONTAMINANTE, agregar_frecuencia,
+                              color_fila, hex_to_rgba,
                               plot_heatmap_interactivo_horario,
                               plot_heatmaps_por_contaminante,
                               plot_linea_comparativa, plot_matriz_correlacion)
@@ -225,6 +227,38 @@ def show_ica_summary(id_est, fecha_ini=None, fecha_fin=None):
         unsafe_allow_html=True
     )
 
+def show_kpi_table(id_est, contaminantes_sel, fecha_ini, fecha_fin):
+    st.subheader("📊 Indicadores clave por contaminante")
+
+    df_kpi = calcular_kpis_estacion(id_est, contaminantes_sel, fecha_ini, fecha_fin)
+    if df_kpi.empty:
+        st.info("No hay datos suficientes para calcular indicadores en el rango seleccionado.")
+        return
+
+    # --- Asegurar tipos numéricos ---
+    for col in ["Promedio (µg/m³)", "Máximo (µg/m³)", "% Norma IDEAM (24h)"]:
+        df_kpi[col] = pd.to_numeric(df_kpi[col], errors="coerce")
+        
+    # --- Estilo base ---
+    df_kpi_styled = (
+        df_kpi.style
+        .format({
+            "Promedio (µg/m³)": lambda x: f"{x:.2f}" if pd.notna(x) else "N/A",
+            "Máximo (µg/m³)": lambda x: f"{x:.2f}" if pd.notna(x) else "N/A",
+            "% Norma IDEAM (24h)": lambda x: f"{x:.1f}" if pd.notna(x) else "N/A"
+        })
+        .apply(color_fila, axis=1)
+        .set_properties(**{
+            "text-align": "center",
+            "font-weight": "500",
+            "border-color": "#e0e0e0",
+            "border-width": "1px",
+            "border-style": "solid"
+        })
+    )
+
+    st.dataframe(df_kpi_styled, use_container_width=True)
+
 def main():
     """
     Punto de entrada principal del dashboard de calidad del aire.
@@ -254,7 +288,10 @@ def main():
     show_comparison_chart(id_est, contaminantes_sel, frecuencia,
                           fecha_ini, fecha_fin,
                           mostrar_oms, mostrar_ideam, sombrear_zona)
-   
+    st.divider()
+    # Tabla KPI
+    show_kpi_table(id_est, contaminantes_sel, fecha_ini, fecha_fin)
+    
     st.divider()
     
     # Heatmaps

@@ -39,6 +39,35 @@ def _sombrear_sobre_limite(fig: go.Figure, y: float, color: str):
         fillcolor=color, opacity=0.08, line_width=0, layer="below"
     )
 
+def generar_color_hex(nombre: str) -> str:
+    """
+    Retorna o Genera un color HEX (#RRGGBB) estable a partir del nombre.
+    """
+    color = COLOR_POR_CONTAMINANTE.get(nombre, None)
+    if color is not None:
+        return color
+        
+    h = abs(hash(nombre)) % 256
+    s = (abs(hash(nombre + 's')) % 128) + 64
+    v = (abs(hash(nombre + 'v')) % 128) + 64 
+
+    r = int((h + s) / 2) % 256
+    g = int((s + v) / 2) % 256
+    b = int((v + h) / 2) % 256
+
+    return f"#{r:02x}{g:02x}{b:02x}"
+
+
+def hex_to_rgba(hex_color, alpha=0.2):
+    """Convierte un color hex (#RRGGBB) a un string 'rgba(r,g,b,a)' con transparencia."""
+    hex_color = hex_color.lstrip("#")
+    r, g, b = tuple(int(hex_color[i:i+2], 16) for i in (0, 2, 4))
+    return f"rgba({r}, {g}, {b}, {alpha});"
+
+def color_fila(row):
+    color = generar_color_hex(row["Contaminante"])
+    rgba_str = f"background-color: {hex_to_rgba(color, alpha=0.15)};"
+    return [rgba_str] * len(row)
 
 def agregar_frecuencia(df: pd.DataFrame, frecuencia: str) -> pd.DataFrame:
     """
@@ -76,7 +105,7 @@ def plot_linea_interactiva(df, estacion, contaminante, frecuencia,
                            limites=None, mostrar_oms=True,
                            mostrar_ideam=True, sombrear=True):
     """Gráfico de línea interactivo con eje X y hover adaptados a la frecuencia."""
-    color = COLOR_POR_CONTAMINANTE.get(contaminante, "#636EFA")
+    color = generar_color_hex(contaminante)
 
     if frecuencia == "Hora":
         date_format = "%Y-%m-%d %H:%M"
@@ -186,7 +215,7 @@ def plot_heatmap_interactivo_horario(df, contaminante):
     """Heatmap horario (hora vs día) con hover personalizado."""
     df = df.copy()
     
-    color = COLOR_POR_CONTAMINANTE.get(contaminante, "#636EFA")
+    color = generar_color_hex(contaminante)
 
     df["fecha_hora"] = pd.to_datetime(df["fecha_hora"])
     df["fecha"] = df["fecha_hora"].dt.date
@@ -255,7 +284,7 @@ def plot_heatmaps_por_contaminante(id_est, contaminantes, fecha_ini=None, fecha_
         df["hora"] = df["fecha_hora"].dt.hour
 
         pivot = df.pivot_table(index="hora", columns="fecha", values="valor", aggfunc="mean")
-        color = COLOR_POR_CONTAMINANTE.get(cont, "#636EFA")
+        color = generar_color_hex(cont)
 
         # Heatmap con hover personalizado
         fig = go.Figure(
@@ -311,11 +340,9 @@ def plot_linea_comparativa(id_est, contaminantes, frecuencia, fecha_ini=None, fe
         df["fecha_hora"] = pd.to_datetime(df["fecha_hora"])
         df_agg = agregar_frecuencia(df, frecuencia)
 
-        # Obtener color definido (o uno por defecto)
-        color = COLOR_POR_CONTAMINANTE.get(cont, None)
-        if color is None:
-            color = f"hsl({hash(cont) % 360},70%,50%)"  # color determinista si no está definido
 
+        color = generar_color_hex(cont)
+    
         # Línea del contaminante
         fig.add_trace(go.Scatter(
             x=df_agg["fecha_hora"],
@@ -409,7 +436,7 @@ def plot_heatmaps_por_contaminante(id_est, contaminantes, fecha_ini=None, fecha_
 
         pivot = df.pivot_table(index="hora", columns="fecha", values="valor", aggfunc="mean")
 
-        color = COLOR_POR_CONTAMINANTE.get(cont, "#636EFA")
+        color = generar_color_hex(cont)
 
         fig = go.Figure(
             data=go.Heatmap(
