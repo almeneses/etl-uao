@@ -1,13 +1,12 @@
 import os
-import sys
 import time
 
 import pandas as pd
 
-from etl.config import API_ESTACIONES, CSV_DIR, LOG_DIR, PROCESSED_DIR, BASE_DIR
+from etl.config import API_ESTACIONES, LOG_DIR, PROCESSED_DIR, BASE_DIR
 from etl.etl_logger import log_etl_run
 from etl.etl_utils import log_message, hay_datos_nuevos
-from etl.extract import discover_csv_files, extract_all, extract_from_api
+from etl.extract import extract_from_api
 from etl.ica_calculator import calcular_indice_ica
 from etl.load import load_to_db
 from etl.load_ica import load_to_ica_database

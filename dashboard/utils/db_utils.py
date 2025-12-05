@@ -1,12 +1,25 @@
-import sqlite3
-from datetime import datetime
-
+import boto3
 import pandas as pd
 import streamlit as st
 from sqlalchemy import create_engine, text
 
-DB_URL = "sqlite:///data/etl_database.db"
-DB_PATH = "etl_database.db"
+
+def get_param(name, decrypt=False):
+    ssm = boto3.client("ssm", region_name="us-east-1")
+    param = ssm.get_parameter(Name=name, WithDecryption=decrypt)
+    return param["Parameter"]["Value"]
+
+def get_db_url():
+    host = get_param("/etl/db/host")
+    port = get_param("/etl/db/port")
+    dbname = get_param("/etl/db/name")
+    user = get_param("/etl/db/user")
+    password = get_param("/etl/db/password", decrypt=True)
+
+    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
+
+
+DB_URL = get_db_url()
 
 engine = create_engine(DB_URL, echo=False, future=True)
 

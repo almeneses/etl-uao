@@ -1,7 +1,23 @@
 import os
 import sys
+import boto3
 
 from sqlalchemy import create_engine
+
+def get_param(name, decrypt=False):
+    ssm = boto3.client("ssm", region_name="us-east-2")
+    param = ssm.get_parameter(Name=name, WithDecryption=decrypt)
+    return param["Parameter"]["Value"]
+
+def get_db_url():
+    host = get_param("/etl/db/host")
+    port = get_param("/etl/db/port")
+    dbname = get_param("/etl/db/name")
+    user = get_param("/etl/db/user")
+    password = get_param("/etl/db/password", decrypt=True)
+
+    return f"postgresql+psycopg2://{user}:{password}@{host}:{port}/{dbname}"
+
 
 # Rutas base
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -23,14 +39,6 @@ API_ESTACIONES = {
 
 
 # Base de datos
-DB_URL = os.getenv("DB_URL") or ""
-
-if not DB_URL:
-    raise RuntimeError(
-        "❌ No se encontró la variable de entorno DB_URL.\n"
-        "Debe apuntar a tu base de datos RDS.\n"
-        "Ejemplo:\n"
-        "export DB_URL='postgresql+psycopg2://user:pass@host:5432/etl_uao'"
-    )
+DB_URL = get_db_url()
 
 engine = create_engine(DB_URL, echo=False)
