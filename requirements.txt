@@ -5,3 +5,4 @@ seaborn
 plotly
 psycopg2-binary
 boto3
+watchtower

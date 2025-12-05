@@ -6,6 +6,7 @@ from utils.db_utils import (obtener_contaminantes_por_estacion,
                             obtener_estaciones, obtener_indice_ica,
                             obtener_mediciones)
 from utils.ica_utils import obtener_color_por_categoria
+from utils.logging_utils import get_logger
 from utils.kpi_utils import calcular_kpis_estacion
 from utils.normativa_utils import obtener_limites
 from utils.plot_utils import (COLOR_POR_CONTAMINANTE, agregar_frecuencia,
@@ -13,6 +14,8 @@ from utils.plot_utils import (COLOR_POR_CONTAMINANTE, agregar_frecuencia,
                               plot_heatmap_interactivo_horario,
                               plot_heatmaps_por_contaminante,
                               plot_linea_comparativa, plot_matriz_correlacion)
+
+logger = get_logger()
 
 
 # Carga de datos con caché
@@ -34,6 +37,14 @@ def load_data(id_est, id_cont, fecha_ini=None, fecha_fin=None):
         pd.DataFrame: DataFrame con las columnas de medición, incluyendo
         la columna 'fecha_hora' convertida a tipo datetime si hay datos.
     """
+    logger.info(
+        "Cargando mediciones: estacion=%s contaminante=%s fecha_ini=%s fecha_fin=%s",
+        id_est,
+        id_cont,
+        fecha_ini,
+        fecha_fin,
+    )
+
     df = obtener_mediciones(id_est, id_cont, fecha_ini, fecha_fin)
     if not df.empty:
         df["fecha_hora"] = pd.to_datetime(df["fecha_hora"])
@@ -205,6 +216,12 @@ def show_ica_summary(id_est, fecha_ini=None, fecha_fin=None):
     try:
         df_ica = obtener_indice_ica(id_est, fecha_ini, fecha_fin)
     except Exception:
+        logger.exception(
+            "Error obteniendo índice ICA para estacion=%s rango=%s-%s",
+            id_est,
+            fecha_ini,
+            fecha_fin,
+        )
         st.info("El índice ICA aún no está disponible en esta base de datos.")
         return
 
@@ -279,6 +296,15 @@ def main():
 
     fecha_ini = str(rango_fechas[0]) if len(rango_fechas) > 0 else None
     fecha_fin = str(rango_fechas[1]) if len(rango_fechas) > 1 else None
+
+    logger.info(
+        "Filtros seleccionados: estacion=%s contaminantes=%s fecha_ini=%s fecha_fin=%s frecuencia=%s",
+        estacion,
+        ", ".join(contaminantes_sel),
+        fecha_ini,
+        fecha_fin,
+        frecuencia,
+    )
 
     # Tarjeta ICA
     show_ica_summary(id_est, fecha_ini, fecha_fin)

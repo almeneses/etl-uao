@@ -6,16 +6,20 @@ import requests
 from sqlalchemy.orm import Session
 
 from etl.config import LOG_DIR, engine
+from etl.logging_utils import get_logger
 from etl.models import Estacion, Medicion, Tiempo
 
 
-def log_message(message, log_dir):
-    os.makedirs(log_dir, exist_ok=True)
-    log_file = os.path.join(log_dir, f"etl_{datetime.date.today()}.log")
-    with open(log_file, "a") as f:
-        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        f.write(f"[{timestamp}] {message}\n")
-    print(message)
+def log_message(message: str, log_dir=None, level: str = "info"):
+    """
+    Envía mensajes al logger central del ETL (CloudWatch + archivo local).
+
+    Se mantiene el parámetro log_dir por compatibilidad, pero el logger
+    usa la ruta configurada en etl.config.LOG_DIR.
+    """
+    logger = get_logger()
+    log_fn = getattr(logger, level, logger.info)
+    log_fn(message)
 
 def ultima_fecha_api(resource_id: str) -> pd.Timestamp | None:
     """
