@@ -4,7 +4,7 @@ import time
 
 import pandas as pd
 
-from etl.config import API_ESTACIONES, CSV_DIR, LOG_DIR, PROCESSED_DIR
+from etl.config import API_ESTACIONES, CSV_DIR, LOG_DIR, PROCESSED_DIR, BASE_DIR
 from etl.etl_logger import log_etl_run
 from etl.etl_utils import log_message, hay_datos_nuevos
 from etl.extract import discover_csv_files, extract_all, extract_from_api
@@ -69,6 +69,9 @@ def run_etl_api():
 
 
 if __name__ == "__main__":
-    # Garantizar que los imports funcionen correctamente
-    sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    os.chdir(BASE_DIR)
+
+    for path in (LOG_DIR, PROCESSED_DIR):
+        os.makedirs(path, exist_ok=True)
+
     run_etl_api()

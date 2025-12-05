@@ -1,9 +1,13 @@
 import os
+import sys
 
 from sqlalchemy import create_engine
 
 # Rutas base
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if str(BASE_DIR) not in sys.path:
+    sys.path.insert(0, str(BASE_DIR))
+
 DATA_DIR = os.path.join(BASE_DIR, "data")
 CSV_DIR = os.path.join(DATA_DIR, "manual_csv")
 PROCESSED_DIR = os.path.join(DATA_DIR, "processed")
@@ -18,7 +22,15 @@ API_ESTACIONES = {
 }
 
 
-# Base de datos SQLite
-DB_PATH = os.path.join(DATA_DIR, "etl_database.db")
-DB_URL = f"sqlite:///{DB_PATH}"
+# Base de datos
+DB_URL = os.getenv("DB_URL") or ""
+
+if not DB_URL:
+    raise RuntimeError(
+        "❌ No se encontró la variable de entorno DB_URL.\n"
+        "Debe apuntar a tu base de datos RDS.\n"
+        "Ejemplo:\n"
+        "export DB_URL='postgresql+psycopg2://user:pass@host:5432/etl_uao'"
+    )
+
 engine = create_engine(DB_URL, echo=False)
