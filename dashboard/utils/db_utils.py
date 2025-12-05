@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 
 
 def get_param(name, decrypt=False):
-    ssm = boto3.client("ssm", region_name="us-east-1")
+    ssm = boto3.client("ssm", region_name="us-east-2")
     param = ssm.get_parameter(Name=name, WithDecryption=decrypt)
     return param["Parameter"]["Value"]
 

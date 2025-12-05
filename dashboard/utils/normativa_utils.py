@@ -19,10 +19,28 @@ LIMITES_FALLBACK = {
 
 def cargar_limites_desde_bd() -> Optional[pd.DataFrame]:
     with engine.connect() as conn:
-        tablas = pd.read_sql(text("SELECT name FROM sqlite_master WHERE type='table'"), conn)
-        if 'limites_norma' not in tablas['name'].tolist():
+        # Verificar si la tabla existe en PostgreSQL
+        tablas = pd.read_sql(
+            text("""
+                SELECT table_name 
+                FROM information_schema.tables 
+                WHERE table_schema = 'public'
+            """),
+            conn
+        )
+
+        if 'limites_norma' not in tablas['table_name'].tolist():
             return None
-        df = pd.read_sql(text("SELECT contaminante, fuente, tipo, valor, unidad FROM limites_norma"), conn)
+
+        # Leer los datos si existe
+        df = pd.read_sql(
+            text("""
+                SELECT contaminante, fuente, tipo, valor, unidad 
+                FROM limites_norma
+            """),
+            conn
+        )
+
         return df
 
 def obtener_limites(contaminante: str) -> Dict[str, Dict[str, float]]:
