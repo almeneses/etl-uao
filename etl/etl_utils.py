@@ -1,6 +1,3 @@
-import datetime
-import os
-
 import pandas as pd
 import requests
 from sqlalchemy.orm import Session

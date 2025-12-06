@@ -1,12 +1,18 @@
+import os
+
+import boto3
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from etl.config import LOG_DIR, engine
+from etl.config import LOG_DIR, engine, get_param
 from etl.etl_utils import log_message
 from etl.models import Contaminante, Estacion, Medicion, Tiempo
 
 Session = sessionmaker(bind=engine)
+
+S3_BUCKET = os.getenv("S3_BUCKET", "etl-dashboard-packages-s3")
+S3_REGION = os.getenv("AWS_REGION", "us-east-2")
 
 # Funciones auxiliares para cargar dimensiones
 def get_or_create_estacion(session, nombre_estacion):
@@ -120,3 +126,42 @@ def load_to_db(df):
 
     finally:
         session.close()
+
+
+def load_csv(df: pd.DataFrame, nombre_estacion: str, carpeta: str):
+    """
+    Guarda el DataFrame como CSV en S3 con el nombre
+    datos-<estacion>-<fecha>.csv dentro de etl/csv-raw.
+    """
+    if df.empty:
+        log_message("DataFrame vacío. No se guardará CSV en S3.", LOG_DIR)
+        return
+
+    bucket = S3_BUCKET
+    if not bucket:
+        log_message(f"No se pudo obtener el bucket de S3", LOG_DIR)
+        return
+
+    fecha = None
+    if "fecha_hora" in df.columns:
+        fechas = pd.to_datetime(df["fecha_hora"], errors="coerce").dropna()
+        if not fechas.empty:
+            fecha = fechas.max().date().isoformat()
+    if not fecha:
+        fecha = pd.Timestamp.utcnow().date().isoformat()
+
+    file_name = f"datos-{nombre_estacion}-{fecha}.csv"
+    key = f"{carpeta}/{file_name}"
+
+    csv_bytes = df.to_csv(index=False).encode("utf-8")
+    size_kb = len(csv_bytes) / 1024
+
+    log_message(f"Iniciando guardado de CSV en S3 ({bucket}/{key})...", LOG_DIR)
+
+    try:
+        s3_client = boto3.client("s3", region_name=S3_REGION)
+        s3_client.put_object(Bucket=bucket, Key=key, Body=csv_bytes)
+        log_message(f"Guardado completado en S3 ({bucket}/{key}).", LOG_DIR)
+        log_message(f"Tamaño del archivo CSV: {size_kb:.2f} KB", LOG_DIR)
+    except Exception as e:
+        log_message(f"Error al guardar CSV en S3 ({bucket}/{key}): {e}", LOG_DIR)

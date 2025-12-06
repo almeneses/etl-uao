@@ -1,5 +1,6 @@
 import os
 import time
+import boto3
 
 import pandas as pd
 
@@ -8,14 +9,17 @@ from etl.etl_logger import log_etl_run
 from etl.etl_utils import log_message, hay_datos_nuevos
 from etl.extract import extract_from_api
 from etl.ica_calculator import calcular_indice_ica
-from etl.load import load_to_db
+from etl.load import load_csv, load_to_db
 from etl.load_ica import load_to_ica_database
 from etl.transform import transform_data
 
+DIR_ETL_RAW = "etl/csv-raw"
+DIR_ETL_CLEAN = "etl/csv-clean"
 
 def run_etl_api():
     log_message("=== INICIO DEL PROCESO ETL ===", LOG_DIR)
-
+    s3 = boto3.client("s3", region_name="us-east-2")
+    
     for resource_id, nombre_estacion in API_ESTACIONES.items():
         start_time = time.time()
         estado = "Éxito"
@@ -43,8 +47,12 @@ def run_etl_api():
 
                 df_api = extract_from_api(resource_id, limit=8160*4, fecha_inicio=fecha_inicio)
                 df_clean = transform_data(df_api)
+
+                load_csv(df_api, nombre_estacion=nombre_estacion, carpeta=DIR_ETL_RAW)
+                load_csv(df_api, nombre_estacion=nombre_estacion, carpeta=DIR_ETL_CLEAN)
                 load_to_db(df_clean)
                 load_to_ica_database(calcular_indice_ica(df_clean))
+                
                 registros_insertados = len(df_clean)
 
         except Exception as e:
